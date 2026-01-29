@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Product, Category, PrinterConfig } from '../types';
-import { CATEGORIES } from '../constants';
-import { printerService } from '../services/PrinterService';
+import { Product, Category, PrinterConfig } from '../types.ts';
+import { CATEGORIES } from '../constants.ts';
+import { printerService } from '../services/PrinterService.ts';
 import { Plus, Edit2, Trash2, X, Check, Printer, Bluetooth, Settings as SettingsIcon } from 'lucide-react';
 
 interface MenuManagerProps {
@@ -69,7 +69,6 @@ const MenuManager: React.FC<MenuManagerProps> = ({ products, onUpdateProducts, p
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Printer Configuration Card */}
         <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><Bluetooth size={24} /></div>
@@ -120,7 +119,6 @@ const MenuManager: React.FC<MenuManagerProps> = ({ products, onUpdateProducts, p
           </div>
         </div>
 
-        {/* Menu Table Section */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
             <SettingsIcon size={18} className="text-orange-500" />
