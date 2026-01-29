@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { ShoppingCart, User, Plus, Minus, X, Check, Printer, Smartphone, CreditCard, Banknote, History as HistoryIcon, Sliders, Bluetooth, ChevronRight, LayoutDashboard } from 'lucide-react';
-import { Product, CartItem, SaleRecord, Category, PaymentMethod, PrinterConfig } from './types';
-import { PRODUCTS as INITIAL_PRODUCTS, CATEGORIES, STORE_DETAILS } from './constants';
-import { printerService } from './services/PrinterService';
-import Receipt from './components/Receipt';
-import Reports from './components/Reports';
-import MenuManager from './components/MenuManager';
+import { Product, CartItem, SaleRecord, Category, PaymentMethod, PrinterConfig } from './types.ts';
+import { PRODUCTS as INITIAL_PRODUCTS, CATEGORIES, STORE_DETAILS } from './constants.ts';
+import { printerService } from './services/PrinterService.ts';
+import Receipt from './components/Receipt.tsx';
+import Reports from './components/Reports.tsx';
+import MenuManager from './components/MenuManager.tsx';
 
 const App: React.FC = () => {
   type AppTab = 'POS' | 'REPORTS' | 'MENU';
@@ -52,7 +52,6 @@ const App: React.FC = () => {
       if (existing) return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
       return [...prev, { ...product, quantity: 1 }];
     });
-    // Haptic feedback simulation for Android
     if (window.navigator.vibrate) window.navigator.vibrate(10);
   };
 
@@ -88,7 +87,6 @@ const App: React.FC = () => {
     setShowCheckout(false);
     clearCart();
 
-    // Trigger Printing
     if (printerService.isConnected()) {
       setIsPrinting(true);
       try {
@@ -245,7 +243,6 @@ const App: React.FC = () => {
          />}
       </main>
 
-      {/* Payment Selection Sheet */}
       {showCheckout && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
           <div className="bg-white rounded-t-[40px] sm:rounded-[40px] w-full max-w-md overflow-hidden shadow-2xl animate-in slide-in-from-bottom-20 duration-300">
@@ -275,7 +272,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Sale Detail Modal */}
       {currentSale && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[60] flex items-center justify-center p-4">
           <div className="relative max-h-[90vh] w-full max-w-[80mm] overflow-y-auto">
