@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,14 +7,16 @@
     <meta name="theme-color" content="#f97316">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="public/manifest.json">
     <title>Bajrang Juice Center POS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Babel standalone to transpile TSX in the browser for GitHub Pages -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         body { 
           font-family: 'Inter', sans-serif; 
-          overscroll-behavior-y: contain; /* Prevents pull-to-refresh on Android */
+          overscroll-behavior-y: contain;
         }
         @media print {
             body * { visibility: hidden; }
@@ -22,8 +25,6 @@
         }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* Native-like ripple effect for buttons */
         .active-scale:active { transform: scale(0.96); transition: transform 0.1s; }
     </style>
 <script type="importmap">
@@ -40,6 +41,7 @@
 </head>
 <body class="bg-gray-50 h-screen overflow-hidden">
     <div id="root"></div>
-    <script type="module" src="index.tsx"></script>
+    <!-- type="text/babel" tells Babel to compile this file -->
+    <script type="text/babel" data-type="module" src="index.tsx"></script>
 </body>
 </html>
