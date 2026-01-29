@@ -1,0 +1,7 @@
+{
+  "name": "Bajrang Juice Center POS",
+  "description": "A high-speed, touch-optimized Point of Sale system for juice and thick shake stores, featuring instant billing, thermal receipt generation, and sales analytics.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
