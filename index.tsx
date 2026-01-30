@@ -2,27 +2,40 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
 import { 
-  ShoppingCart, Plus, Minus, X, Check, Printer, Smartphone, 
-  Banknote, History as HistoryIcon, Sliders, Bluetooth, 
-  ChevronRight, LayoutDashboard, TrendingUp, Calendar, 
-  CreditCard, Download, FileText, PieChart as PieIcon, List, 
-  Edit2, Trash2, Settings as SettingsIcon, Save, ArrowLeft,
-  FolderPlus, Tag
+  ShoppingCart, Plus, Minus, X, Check, Printer, 
+  History as HistoryIcon, ChevronRight, LayoutDashboard, 
+  TrendingUp, Download, List, Edit2, Trash2, 
+  Settings as SettingsIcon, ArrowLeft, FolderPlus, RefreshCcw
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
-  ResponsiveContainer, Cell, PieChart, Pie 
+  ResponsiveContainer, Cell
 } from 'recharts';
 
 /** --- TYPES --- **/
 interface Product { id: string; name: string; price: number; category: string; color: string; }
 interface CartItem extends Product { quantity: number; }
 type PaymentMethod = 'CASH' | 'UPI' | 'CARD';
-interface SaleRecord { id: string; billNo: string; items: CartItem[]; subtotal: number; gst: number; total: number; paymentMethod: PaymentMethod; timestamp: number; }
+interface SaleRecord { 
+  id: string; 
+  billNo: string; 
+  items: CartItem[]; 
+  subtotal: number; 
+  gst: number; 
+  total: number; 
+  paymentMethod: PaymentMethod; 
+  timestamp: number; 
+}
 interface ItemSummary { name: string; quantity: number; revenue: number; }
 
-/** --- CONSTANTS --- **/
-const INITIAL_CATEGORIES = ['JUICES', 'SHAKES', 'SMOOTHIES', 'ADD-ONS', 'COMBOS'];
+/** --- CONSTANTS & DEFAULTS --- **/
+const STORAGE_KEYS = {
+  SALES: 'bjc_v4_sales',
+  PRODUCTS: 'bjc_v4_products',
+  CATEGORIES: 'bjc_v4_categories'
+};
+
+const DEFAULT_CATEGORIES = ['JUICES', 'SHAKES', 'SMOOTHIES', 'ADD-ONS'];
 const STORE_DETAILS = { 
   name: 'BAJRANG JUICE CENTER', 
   tagline: 'Fresh Juice & Thick Shakes', 
@@ -30,13 +43,12 @@ const STORE_DETAILS = {
   gstin: '24XXXXX1234A1Z1', 
   gstRate: 0.05 
 };
+
 const INITIAL_PRODUCTS: Product[] = [
-  { id: 'j1', name: 'Mango Juice', price: 80, category: 'JUICES', color: 'bg-orange-100 border-orange-200 text-orange-800' },
-  { id: 'j2', name: 'Orange Juice', price: 70, category: 'JUICES', color: 'bg-orange-50 border-orange-100 text-orange-700' },
-  { id: 'j3', name: 'Watermelon Juice', price: 60, category: 'JUICES', color: 'bg-red-50 border-red-100 text-red-700' },
-  { id: 's1', name: 'Strawberry Shake', price: 120, category: 'SHAKES', color: 'bg-pink-100 border-pink-200 text-pink-800' },
-  { id: 's2', name: 'Chocolate Shake', price: 130, category: 'SHAKES', color: 'bg-amber-100 border-amber-200 text-amber-900' },
-  { id: 'a1', name: 'Extra Scoop', price: 30, category: 'ADD-ONS', color: 'bg-blue-50 border-blue-100 text-blue-700' },
+  { id: '1', name: 'Mango Juice', price: 80, category: 'JUICES', color: 'bg-orange-100 border-orange-200 text-orange-800' },
+  { id: '2', name: 'Strawberry Shake', price: 120, category: 'SHAKES', color: 'bg-pink-100 border-pink-200 text-pink-800' },
+  { id: '3', name: 'Berry Smoothie', price: 150, category: 'SMOOTHIES', color: 'bg-purple-100 border-purple-200 text-purple-800' },
+  { id: '4', name: 'Extra Scoop', price: 30, category: 'ADD-ONS', color: 'bg-blue-50 border-blue-100 text-blue-700' },
 ];
 
 /** --- COMPONENTS --- **/
@@ -45,22 +57,22 @@ const Receipt: React.FC<{ sale: SaleRecord; id?: string }> = ({ sale, id }) => {
   const timeStr = new Date(sale.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div id={id} className="bg-white p-6 font-mono text-[11px] w-full max-w-[80mm] mx-auto text-black border border-gray-200 shadow-sm print:border-0 print:shadow-none">
+    <div id={id} className="bg-white p-6 font-mono text-[11px] w-full max-w-[80mm] mx-auto text-black border border-gray-100 shadow-sm print:shadow-none print:border-0">
       <div className="text-center mb-4">
         <h1 className="font-bold text-lg uppercase tracking-tighter leading-none">{STORE_DETAILS.name}</h1>
         <p className="text-[10px] mt-1">{STORE_DETAILS.tagline}</p>
-        <p className="text-[9px] text-gray-600">{STORE_DETAILS.address}</p>
-        <p className="text-[9px] font-bold mt-1">GSTIN: {STORE_DETAILS.gstin}</p>
+        <p className="text-[9px] text-gray-500">{STORE_DETAILS.address}</p>
+        <p className="text-[10px] font-bold mt-1">GSTIN: {STORE_DETAILS.gstin}</p>
       </div>
 
-      <div className="border-t border-dashed border-gray-400 my-2"></div>
+      <div className="border-t border-dashed border-gray-300 my-2"></div>
       
       <div className="flex justify-between text-[9px]">
         <span className="font-bold uppercase">Bill: #{sale.billNo}</span>
         <span>{dateStr} {timeStr}</span>
       </div>
 
-      <div className="border-t border-dashed border-gray-400 my-2"></div>
+      <div className="border-t border-dashed border-gray-300 my-2"></div>
 
       <div className="space-y-1">
         <div className="flex justify-between font-bold border-b border-gray-100 pb-1 mb-1">
@@ -77,7 +89,7 @@ const Receipt: React.FC<{ sale: SaleRecord; id?: string }> = ({ sale, id }) => {
         ))}
       </div>
 
-      <div className="border-t border-dashed border-gray-400 mt-3 pt-2 space-y-1">
+      <div className="border-t border-dashed border-gray-300 mt-3 pt-2 space-y-1">
         <div className="flex justify-between">
           <span>Subtotal</span>
           <span>₹{sale.subtotal.toFixed(2)}</span>
@@ -86,13 +98,13 @@ const Receipt: React.FC<{ sale: SaleRecord; id?: string }> = ({ sale, id }) => {
           <span>GST (5%)</span>
           <span>₹{sale.gst.toFixed(2)}</span>
         </div>
-        <div className="flex justify-between font-black text-sm pt-2 border-t border-gray-100">
+        <div className="flex justify-between font-black text-sm pt-2 border-t border-gray-200">
           <span>GRAND TOTAL</span>
           <span>₹{sale.total.toFixed(2)}</span>
         </div>
       </div>
 
-      <div className="text-center mt-6 uppercase font-black bg-gray-100 py-1 rounded">
+      <div className="text-center mt-6 uppercase font-black bg-gray-50 py-1 rounded">
         Payment: {sale.paymentMethod}
       </div>
 
@@ -141,7 +153,7 @@ const Reports: React.FC<{ sales: SaleRecord[]; onClear: () => void; onSelectSale
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `Bajrang_Sales_${new Date().toLocaleDateString()}.csv`;
+    link.download = `Sales_Report_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
   };
 
@@ -153,32 +165,32 @@ const Reports: React.FC<{ sales: SaleRecord[]; onClear: () => void; onSelectSale
           <p className="text-sm text-gray-500">Sales and inventory analytics</p>
         </div>
         <div className="flex gap-2 w-full md:w-auto">
-          <button onClick={exportCSV} className="flex-1 md:flex-none bg-white border p-3 rounded-xl hover:bg-gray-100 flex items-center justify-center gap-2 text-xs font-bold shadow-sm transition-all"><Download size={16}/> EXPORT CSV</button>
-          <button onClick={() => { if(confirm("Clear transaction history?")) onClear(); }} className="flex-1 md:flex-none bg-red-50 text-red-500 p-3 rounded-xl hover:bg-red-100 flex items-center justify-center gap-2 text-xs font-bold transition-all"><Trash2 size={16}/> RESET</button>
+          <button onClick={exportCSV} className="flex-1 md:flex-none bg-white border p-3 rounded-xl hover:bg-gray-100 flex items-center justify-center gap-2 text-xs font-bold shadow-sm"><Download size={16}/> EXPORT CSV</button>
+          <button onClick={() => { if(confirm("Permanently clear transaction history?")) onClear(); }} className="flex-1 md:flex-none bg-red-50 text-red-500 p-3 rounded-xl hover:bg-red-100 flex items-center justify-center gap-2 text-xs font-bold"><Trash2 size={16}/> RESET</button>
         </div>
       </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
-        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">Total Revenue</p>
+        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm text-center lg:text-left">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Gross Sales</p>
           <h2 className="text-lg md:text-2xl font-black text-gray-900">₹{stats.revenue.toLocaleString()}</h2>
         </div>
-        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">Bills Raised</p>
+        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm text-center lg:text-left">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Orders</p>
           <h2 className="text-lg md:text-2xl font-black text-gray-900">{stats.count}</h2>
         </div>
-        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm text-green-600">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">Cash Closed</p>
+        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm text-green-600 text-center lg:text-left">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Cash Collection</p>
           <h2 className="text-lg md:text-2xl font-black">₹{(stats.methods['CASH'] || 0).toLocaleString()}</h2>
         </div>
-        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm text-blue-600">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">GST (5%)</p>
+        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm text-blue-600 text-center lg:text-left">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">GST Collected</p>
           <h2 className="text-lg md:text-2xl font-black">₹{stats.gst.toLocaleString()}</h2>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm">
           <h3 className="font-black mb-4 flex items-center gap-2 text-sm md:text-base"><List size={18} className="text-orange-500"/> Item-wise Breakdown</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[11px] md:text-xs">
@@ -187,15 +199,16 @@ const Reports: React.FC<{ sales: SaleRecord[]; onClear: () => void; onSelectSale
                 {itemSummary.map(item => (
                   <tr key={item.name} className="hover:bg-gray-50 transition-colors"><td className="py-3 px-3 font-semibold">{item.name}</td><td className="py-3 text-center px-3 font-bold">{item.quantity}</td><td className="py-3 text-right px-3 font-black">₹{item.revenue.toFixed(0)}</td></tr>
                 ))}
+                {itemSummary.length === 0 && <tr><td colSpan={3} className="py-12 text-center text-gray-300 italic uppercase tracking-widest">No Sales Data</td></tr>}
               </tbody>
             </table>
           </div>
         </div>
         <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm">
-          <h3 className="font-black mb-4 flex items-center gap-2 text-sm md:text-base"><HistoryIcon size={18} className="text-blue-500"/> Order Logs</h3>
+          <h3 className="font-black mb-4 flex items-center gap-2 text-sm md:text-base"><HistoryIcon size={18} className="text-blue-500"/> Transaction Logs</h3>
           <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 hide-scrollbar">
             {sales.length === 0 ? (
-               <div className="h-40 flex flex-col items-center justify-center text-gray-300 italic">No transactions found</div>
+               <div className="h-40 flex flex-col items-center justify-center text-gray-300 italic uppercase tracking-widest">History is Empty</div>
             ) : sales.slice().reverse().map(sale => (
               <button key={sale.id} onClick={() => onSelectSale(sale)} className="w-full flex items-center justify-between p-3 md:p-4 bg-gray-50 rounded-xl md:rounded-2xl hover:bg-gray-100 transition-all active-scale border border-transparent hover:border-gray-200">
                 <div className="text-left"><p className="font-black text-sm">₹{sale.total.toFixed(0)}</p><p className="text-[9px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">{new Date(sale.timestamp).toLocaleTimeString()} • {sale.paymentMethod} • #{sale.billNo}</p></div>
@@ -217,7 +230,7 @@ const MenuManager: React.FC<{
 }> = ({ products, onUpdateProducts, categories, onUpdateCategories }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newCategory, setNewCategory] = useState('');
+  const [newCatName, setNewCatName] = useState('');
   const [productForm, setProductForm] = useState<Partial<Product>>({ name: '', price: 0, category: categories[0] || '', color: 'bg-orange-50' });
 
   const handleSaveProduct = () => {
@@ -234,15 +247,15 @@ const MenuManager: React.FC<{
   };
 
   const handleAddCategory = () => {
-    const trimmed = newCategory.trim().toUpperCase();
+    const trimmed = newCatName.trim().toUpperCase();
     if (trimmed && !categories.includes(trimmed)) {
       onUpdateCategories([...categories, trimmed]);
-      setNewCategory('');
+      setNewCatName('');
     }
   };
 
-  const handleDeleteCategory = (cat: string) => {
-    if (confirm(`Delete category "${cat}"? Products in this category will become Uncategorized.`)) {
+  const deleteCategory = (cat: string) => {
+    if (confirm(`Delete category "${cat}"? Products in this category will be moved to "UNCATEGORIZED".`)) {
       onUpdateCategories(categories.filter(c => c !== cat));
       onUpdateProducts(products.map(p => p.category === cat ? { ...p, category: 'UNCATEGORIZED' } : p));
     }
@@ -256,34 +269,34 @@ const MenuManager: React.FC<{
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Category Management Section */}
+        {/* Category Management */}
         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm h-fit">
           <div className="flex items-center gap-2 mb-6">
             <FolderPlus size={20} className="text-blue-500" />
-            <h3 className="font-black text-gray-800">Manage Categories</h3>
+            <h3 className="font-black text-gray-800">Categories</h3>
           </div>
           <div className="flex gap-2 mb-6">
             <input 
               type="text" 
-              placeholder="NEW CATEGORY" 
+              placeholder="E.G. DESSERTS" 
               className="flex-1 p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold uppercase outline-none focus:ring-2 focus:ring-blue-100"
-              value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
             />
-            <button onClick={handleAddCategory} className="bg-blue-600 text-white p-3 rounded-xl font-bold active-scale"><Plus size={20}/></button>
+            <button onClick={handleAddCategory} className="bg-blue-600 text-white p-3 rounded-xl font-bold active-scale"><Plus size={18}/></button>
           </div>
           <div className="space-y-2">
             {categories.map(cat => (
-              <div key={cat} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl group">
-                <span className="text-xs font-black tracking-widest text-gray-600 uppercase">{cat}</span>
-                <button onClick={() => handleDeleteCategory(cat)} className="p-1.5 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"><Trash2 size={16}/></button>
+              <div key={cat} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl group transition-all hover:bg-gray-100">
+                <span className="text-[10px] font-black tracking-[0.15em] text-gray-600 uppercase">{cat}</span>
+                <button onClick={() => deleteCategory(cat)} className="p-1.5 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"><Trash2 size={16}/></button>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Product List Section */}
+        {/* Product List */}
         <div className="lg:col-span-2 space-y-8">
           {(showAddForm || editingId) && (
             <div className="bg-white p-6 rounded-3xl shadow-2xl border border-gray-100 animate-in slide-in-from-top-4">
@@ -292,6 +305,7 @@ const MenuManager: React.FC<{
                 <div className="flex flex-col gap-1"><label className="text-[10px] font-black text-gray-400 px-1 uppercase">Name</label><input type="text" className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-orange-200" value={productForm.name} onChange={e => setProductForm({...productForm, name: e.target.value})} /></div>
                 <div className="flex flex-col gap-1"><label className="text-[10px] font-black text-gray-400 px-1 uppercase">Price</label><input type="number" className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-orange-200" value={productForm.price} onChange={e => setProductForm({...productForm, price: Number(e.target.value)})} /></div>
                 <div className="flex flex-col gap-1"><label className="text-[10px] font-black text-gray-400 px-1 uppercase">Category</label><select className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-orange-200" value={productForm.category} onChange={e => setProductForm({...productForm, category: e.target.value})}>
+                  <option value="">Select Category</option>
                   {categories.map(c => <option key={c} value={c}>{c}</option>)}
                 </select></div>
                 <div className="flex gap-2 items-end">
@@ -305,19 +319,20 @@ const MenuManager: React.FC<{
           <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b"><tr className="border-b"><th className="px-6 py-4">Item Name</th><th className="px-6 py-4">Category</th><th className="px-6 py-4">Price</th><th className="px-6 py-4 text-right">Action</th></tr></thead>
+                <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b"><tr className="border-b"><th className="px-6 py-4">Item Name</th><th className="px-6 py-4 text-center">Category</th><th className="px-6 py-4 text-right">Price</th><th className="px-6 py-4 text-right">Action</th></tr></thead>
                 <tbody className="divide-y divide-gray-50">
                   {products.map(p => (
                     <tr key={p.id} className="hover:bg-gray-50 transition-colors group">
-                      <td className="px-6 py-4 font-bold text-gray-800 text-sm">{p.name}</td>
-                      <td className="px-6 py-4"><span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-[9px] font-black uppercase">{p.category}</span></td>
-                      <td className="px-6 py-4 font-black text-sm text-orange-600">₹{p.price}</td>
+                      <td className="px-6 py-4 font-bold text-gray-800 text-sm uppercase">{p.name}</td>
+                      <td className="px-6 py-4 text-center"><span className="px-2 py-1 bg-gray-100 text-gray-400 rounded-full text-[9px] font-black uppercase tracking-wider">{p.category}</span></td>
+                      <td className="px-6 py-4 font-black text-sm text-orange-600 text-right">₹{p.price}</td>
                       <td className="px-6 py-4 text-right flex justify-end gap-1 md:gap-2">
                         <button onClick={() => { setEditingId(p.id); setProductForm(p); }} className="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Edit2 size={16}/></button>
                         <button onClick={() => { if(confirm("Permanently delete this item?")) onUpdateProducts(products.filter(it => it.id !== p.id)); }} className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={16}/></button>
                       </td>
                     </tr>
                   ))}
+                  {products.length === 0 && <tr><td colSpan={4} className="py-20 text-center text-gray-300 italic uppercase tracking-[0.2em]">Menu is Empty</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -332,25 +347,40 @@ const MenuManager: React.FC<{
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'POS' | 'REPORTS' | 'MENU'>('POS');
   const [activeCategory, setActiveCategory] = useState<string>('');
-  const [categories, setCategories] = useState<string[]>(INITIAL_CATEGORIES);
+  const [categories, setCategories] = useState<string[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
   const [currentSale, setCurrentSale] = useState<SaleRecord | null>(null);
   const [isBasketOpen, setIsBasketOpen] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
+  // Initialize Data from Offline Storage
   useEffect(() => {
-    const savedSales = localStorage.getItem('bjc_sales_db_v3');
-    const savedProducts = localStorage.getItem('bjc_products_db_v3');
-    const savedCategories = localStorage.getItem('bjc_categories_db_v3');
+    const savedSales = localStorage.getItem(STORAGE_KEYS.SALES);
+    const savedProducts = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+    const savedCategories = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
     
     if (savedSales) setSales(JSON.parse(savedSales));
-    if (savedProducts) setProducts(JSON.parse(savedProducts));
     
-    const cats = savedCategories ? JSON.parse(savedCategories) : INITIAL_CATEGORIES;
-    setCategories(cats);
-    setActiveCategory(cats[0]);
+    const loadedProducts = savedProducts ? JSON.parse(savedProducts) : INITIAL_PRODUCTS;
+    setProducts(loadedProducts);
+    
+    const loadedCategories = savedCategories ? JSON.parse(savedCategories) : DEFAULT_CATEGORIES;
+    setCategories(loadedCategories);
+    
+    if (loadedCategories.length > 0) setActiveCategory(loadedCategories[0]);
+    setIsDataLoaded(true);
   }, []);
+
+  // Save State to Offline Storage whenever it changes
+  useEffect(() => {
+    if (isDataLoaded) {
+      localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
+      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+      localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
+    }
+  }, [sales, products, categories, isDataLoaded]);
 
   const total = cart.reduce((a, b) => a + (b.price * b.quantity), 0) * 1.05;
 
@@ -370,7 +400,7 @@ const App: React.FC = () => {
 
     const newSale: SaleRecord = {
       id: Date.now().toString(),
-      billNo: (5000 + sales.length + 1).toString(),
+      billNo: (7000 + sales.length + 1).toString(),
       items: [...cart],
       subtotal,
       gst,
@@ -378,18 +408,11 @@ const App: React.FC = () => {
       paymentMethod: method,
       timestamp: Date.now()
     };
-    const updatedSales = [...sales, newSale];
-    setSales(updatedSales);
-    localStorage.setItem('bjc_sales_db_v3', JSON.stringify(updatedSales));
+    
+    setSales(prev => [...prev, newSale]);
     setCurrentSale(newSale);
     setCart([]);
     setIsBasketOpen(false);
-  };
-
-  const updateCategories = (newCats: string[]) => {
-    setCategories(newCats);
-    localStorage.setItem('bjc_categories_db_v3', JSON.stringify(newCats));
-    if (!newCats.includes(activeCategory)) setActiveCategory(newCats[0] || '');
   };
 
   const NavItem = ({ id, icon: Icon, label }: { id: any, icon: any, label: string }) => (
@@ -402,11 +425,13 @@ const App: React.FC = () => {
     </button>
   );
 
+  if (!isDataLoaded) return <div className="h-screen bg-gray-950 flex flex-col items-center justify-center text-orange-500 gap-4"><RefreshCcw className="animate-spin" size={48}/><p className="font-black animate-pulse">BOOTING POS...</p></div>;
+
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-gray-50 overflow-hidden font-sans">
       
       {/* Navigation: Sidebar (Laptop) / Bottom Bar (Mobile) */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-gray-950 flex lg:flex-col items-center justify-around lg:justify-start py-2 lg:py-8 px-2 lg:px-0 gap-2 lg:gap-8 border-t lg:border-t-0 lg:border-r border-gray-800 z-[60] lg:relative lg:w-24">
+      <nav className="fixed bottom-0 left-0 right-0 bg-gray-950 flex lg:flex-col items-center justify-around lg:justify-start py-2 lg:py-8 px-2 lg:px-0 gap-2 lg:gap-8 border-t lg:border-t-0 lg:border-r border-gray-800 z-[60] lg:relative lg:w-24 shadow-2xl">
         <div className="hidden lg:flex w-12 h-12 bg-orange-600 rounded-2xl items-center justify-center text-white shadow-2xl mb-4"><LayoutDashboard size={24}/></div>
         <NavItem id="POS" icon={ShoppingCart} label="POS" />
         <NavItem id="REPORTS" icon={TrendingUp} label="Stats" />
@@ -449,15 +474,15 @@ const App: React.FC = () => {
                     <button onClick={() => setIsBasketOpen(false)} className="lg:hidden p-2 -ml-2 text-gray-400"><ArrowLeft size={20}/></button>
                     <h2 className="text-xl font-black text-gray-800 tracking-tight">Basket</h2>
                   </div>
-                  <button onClick={() => { setCart([]); setIsBasketOpen(false); }} className="text-red-400 font-bold text-xs uppercase hover:text-red-600 transition-colors">Clear All</button>
+                  <button onClick={() => { setCart([]); setIsBasketOpen(false); }} className="text-red-400 font-bold text-xs uppercase hover:text-red-600 transition-colors">Clear</button>
                 </div>
                 <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-50/20 hide-scrollbar">
                   {cart.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-gray-200 gap-4 opacity-70">
                       <ShoppingCart size={80}/>
                       <div className="text-center">
-                        <p className="font-black text-xs uppercase tracking-[0.2em]">Basket Empty</p>
-                        <p className="text-[10px] font-bold mt-1 text-gray-400">Add some items to get started</p>
+                        <p className="font-black text-xs uppercase tracking-[0.2em]">Empty Basket</p>
+                        <p className="text-[10px] font-bold mt-1 text-gray-400 italic">Select items to start order</p>
                       </div>
                     </div>
                   ) : cart.map(i => (
@@ -479,8 +504,8 @@ const App: React.FC = () => {
                   </div>
                   <div className="flex justify-between text-2xl md:text-3xl font-black mb-6 tracking-tighter text-gray-950"><span>Total</span><span className="text-orange-600">₹{total.toFixed(0)}</span></div>
                   <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => handleCheckout('UPI')} disabled={cart.length === 0} className="bg-blue-600 text-white py-4 md:py-5 rounded-2xl md:rounded-3xl font-black text-[10px] md:text-xs disabled:opacity-50 active-scale shadow-lg shadow-blue-50 hover:bg-blue-700 transition-all uppercase tracking-widest">UPI Pay</button>
-                    <button onClick={() => handleCheckout('CASH')} disabled={cart.length === 0} className="bg-green-600 text-white py-4 md:py-5 rounded-2xl md:rounded-3xl font-black text-[10px] md:text-xs disabled:opacity-50 active-scale shadow-lg shadow-green-50 hover:bg-green-700 transition-all uppercase tracking-widest">Cash Pay</button>
+                    <button onClick={() => handleCheckout('UPI')} disabled={cart.length === 0} className="bg-blue-600 text-white py-4 md:py-5 rounded-2xl md:rounded-3xl font-black text-[10px] md:text-xs disabled:opacity-50 active-scale shadow-lg shadow-blue-50 hover:bg-blue-700 transition-all uppercase tracking-widest">UPI PAY</button>
+                    <button onClick={() => handleCheckout('CASH')} disabled={cart.length === 0} className="bg-green-600 text-white py-4 md:py-5 rounded-2xl md:rounded-3xl font-black text-[10px] md:text-xs disabled:opacity-50 active-scale shadow-lg shadow-green-50 hover:bg-green-700 transition-all uppercase tracking-widest">CASH PAY</button>
                   </div>
                 </div>
               </div>
@@ -494,7 +519,7 @@ const App: React.FC = () => {
               >
                 <div className="flex items-center gap-3">
                   <div className="bg-white/20 w-8 h-8 rounded-lg flex items-center justify-center font-black">{cart.reduce((a, b) => a + b.quantity, 0)}</div>
-                  <span className="font-black text-sm uppercase tracking-widest">Review Order</span>
+                  <span className="font-black text-sm uppercase tracking-widest">Review Basket</span>
                 </div>
                 <span className="font-black text-lg tracking-tighter">₹{total.toFixed(0)}</span>
               </button>
@@ -502,13 +527,17 @@ const App: React.FC = () => {
 
           </div>
         ) : activeTab === 'REPORTS' ? (
-          <Reports sales={sales} onClear={() => { setSales([]); localStorage.removeItem('bjc_sales_db_v3'); }} onSelectSale={setCurrentSale} />
+          <Reports 
+            sales={sales} 
+            onClear={() => { setSales([]); localStorage.removeItem(STORAGE_KEYS.SALES); }} 
+            onSelectSale={setCurrentSale} 
+          />
         ) : (
           <MenuManager 
             products={products} 
-            onUpdateProducts={(newP) => { setProducts(newP); localStorage.setItem('bjc_products_db_v3', JSON.stringify(newP)); }} 
+            onUpdateProducts={setProducts} 
             categories={categories}
-            onUpdateCategories={updateCategories}
+            onUpdateCategories={setCategories}
           />
         )}
       </main>
@@ -518,9 +547,9 @@ const App: React.FC = () => {
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-4">
            <div className="w-full max-w-[80mm] animate-in zoom-in-95 duration-200">
               <div className="bg-white rounded-[32px] overflow-hidden shadow-2xl p-1"><Receipt sale={currentSale}/></div>
-              <div className="mt-6 flex flex-col gap-3">
-                 <button onClick={() => window.print()} className="w-full bg-white text-black py-4 md:py-5 rounded-2xl md:rounded-3xl font-black flex items-center justify-center gap-3 active-scale shadow-lg hover:bg-gray-50 transition-all"><Printer size={20}/> THERMAL PRINT</button>
-                 <button onClick={() => setCurrentSale(null)} className="w-full bg-orange-500 text-white py-4 md:py-5 rounded-2xl md:rounded-3xl font-black shadow-xl shadow-orange-500/20 active-scale hover:bg-orange-600 transition-all uppercase tracking-widest">NEXT CUSTOMER</button>
+              <div className="mt-6 flex flex-col gap-3 print:hidden">
+                 <button onClick={() => window.print()} className="w-full bg-white text-black py-4 md:py-5 rounded-2xl md:rounded-3xl font-black flex items-center justify-center gap-3 active-scale shadow-lg"><Printer size={20}/> PRINT INVOICE</button>
+                 <button onClick={() => setCurrentSale(null)} className="w-full bg-orange-500 text-white py-4 md:py-5 rounded-2xl md:rounded-3xl font-black shadow-xl shadow-orange-500/20 active-scale uppercase tracking-widest">NEXT ORDER</button>
               </div>
            </div>
         </div>
