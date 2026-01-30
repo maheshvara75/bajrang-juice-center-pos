@@ -6,7 +6,8 @@ import {
   Banknote, History as HistoryIcon, Sliders, Bluetooth, 
   ChevronRight, LayoutDashboard, TrendingUp, Calendar, 
   CreditCard, Download, FileText, PieChart as PieIcon, List, 
-  Edit2, Trash2, Settings as SettingsIcon, Save, ArrowLeft
+  Edit2, Trash2, Settings as SettingsIcon, Save, ArrowLeft,
+  FolderPlus, Tag
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -14,15 +15,14 @@ import {
 } from 'recharts';
 
 /** --- TYPES --- **/
-type Category = 'JUICES' | 'SHAKES' | 'SMOOTHIES' | 'ADD-ONS' | 'COMBOS';
-interface Product { id: string; name: string; price: number; category: Category; color: string; }
+interface Product { id: string; name: string; price: number; category: string; color: string; }
 interface CartItem extends Product { quantity: number; }
 type PaymentMethod = 'CASH' | 'UPI' | 'CARD';
 interface SaleRecord { id: string; billNo: string; items: CartItem[]; subtotal: number; gst: number; total: number; paymentMethod: PaymentMethod; timestamp: number; }
 interface ItemSummary { name: string; quantity: number; revenue: number; }
 
 /** --- CONSTANTS --- **/
-const CATEGORIES: Category[] = ['JUICES', 'SHAKES', 'SMOOTHIES', 'ADD-ONS', 'COMBOS'];
+const INITIAL_CATEGORIES = ['JUICES', 'SHAKES', 'SMOOTHIES', 'ADD-ONS', 'COMBOS'];
 const STORE_DETAILS = { 
   name: 'BAJRANG JUICE CENTER', 
   tagline: 'Fresh Juice & Thick Shakes', 
@@ -149,7 +149,7 @@ const Reports: React.FC<{ sales: SaleRecord[]; onClear: () => void; onSelectSale
     <div className="p-4 md:p-6 h-full overflow-y-auto bg-gray-50 pb-32 lg:pb-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-black">Performance Dashboard</h1>
+          <h1 className="text-2xl font-black text-gray-900">Performance Dashboard</h1>
           <p className="text-sm text-gray-500">Sales and inventory analytics</p>
         </div>
         <div className="flex gap-2 w-full md:w-auto">
@@ -209,66 +209,119 @@ const Reports: React.FC<{ sales: SaleRecord[]; onClear: () => void; onSelectSale
   );
 };
 
-const MenuManager: React.FC<{ products: Product[]; onUpdate: (p: Product[]) => void }> = ({ products, onUpdate }) => {
+const MenuManager: React.FC<{ 
+  products: Product[]; 
+  onUpdateProducts: (p: Product[]) => void;
+  categories: string[];
+  onUpdateCategories: (c: string[]) => void;
+}> = ({ products, onUpdateProducts, categories, onUpdateCategories }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState<Partial<Product>>({ name: '', price: 0, category: 'JUICES', color: 'bg-orange-50' });
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newCategory, setNewCategory] = useState('');
+  const [productForm, setProductForm] = useState<Partial<Product>>({ name: '', price: 0, category: categories[0] || '', color: 'bg-orange-50' });
 
-  const handleSave = () => {
-    if (!form.name || !form.price) return;
+  const handleSaveProduct = () => {
+    if (!productForm.name || !productForm.price) return;
     if (editingId) {
-      onUpdate(products.map(p => p.id === editingId ? { ...p, ...form } as Product : p));
+      onUpdateProducts(products.map(p => p.id === editingId ? { ...p, ...productForm } as Product : p));
       setEditingId(null);
     } else {
-      const newP: Product = { ...form as Product, id: Date.now().toString(), color: form.color || 'bg-gray-50' };
-      onUpdate([...products, newP]);
-      setShowAdd(false);
+      const newP: Product = { ...productForm as Product, id: Date.now().toString(), color: productForm.color || 'bg-gray-50' };
+      onUpdateProducts([...products, newP]);
+      setShowAddForm(false);
     }
-    setForm({ name: '', price: 0, category: 'JUICES', color: 'bg-orange-50' });
+    setProductForm({ name: '', price: 0, category: categories[0] || '', color: 'bg-orange-50' });
+  };
+
+  const handleAddCategory = () => {
+    const trimmed = newCategory.trim().toUpperCase();
+    if (trimmed && !categories.includes(trimmed)) {
+      onUpdateCategories([...categories, trimmed]);
+      setNewCategory('');
+    }
+  };
+
+  const handleDeleteCategory = (cat: string) => {
+    if (confirm(`Delete category "${cat}"? Products in this category will become Uncategorized.`)) {
+      onUpdateCategories(categories.filter(c => c !== cat));
+      onUpdateProducts(products.map(p => p.category === cat ? { ...p, category: 'UNCATEGORIZED' } : p));
+    }
   };
 
   return (
     <div className="p-4 md:p-6 h-full overflow-y-auto bg-gray-50 pb-32 lg:pb-6">
       <div className="flex justify-between items-center mb-8">
-        <div><h1 className="text-2xl font-black">Menu Control</h1><p className="text-sm text-gray-500">Edit products and dynamic pricing</p></div>
-        <button onClick={() => setShowAdd(true)} className="bg-orange-500 text-white p-3 rounded-xl md:rounded-2xl font-black shadow-lg shadow-orange-100 active-scale hover:bg-orange-600 transition-all"><Plus size={20}/></button>
+        <div><h1 className="text-2xl font-black text-gray-900">Store Settings</h1><p className="text-sm text-gray-500">Configure menu, prices and categories</p></div>
+        <button onClick={() => setShowAddForm(true)} className="bg-orange-500 text-white p-3 rounded-xl md:rounded-2xl font-black shadow-lg shadow-orange-100 active-scale hover:bg-orange-600 transition-all"><Plus size={20}/></button>
       </div>
 
-      {(showAdd || editingId) && (
-        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-2xl border border-gray-100 mb-8 animate-in slide-in-from-top-4">
-          <h3 className="font-black mb-4 text-orange-600 tracking-tight">{editingId ? 'Modify Product' : 'Add New Item'}</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="flex flex-col gap-1"><label className="text-[10px] font-black text-gray-400 px-1">ITEM NAME</label><input type="text" placeholder="Thick Mango Shake" className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-orange-200 outline-none" value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
-            <div className="flex flex-col gap-1"><label className="text-[10px] font-black text-gray-400 px-1">PRICE (₹)</label><input type="number" placeholder="80" className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-orange-200 outline-none" value={form.price} onChange={e => setForm({...form, price: Number(e.target.value)})} /></div>
-            <div className="flex flex-col gap-1"><label className="text-[10px] font-black text-gray-400 px-1">CATEGORY</label><select className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-orange-200 outline-none" value={form.category} onChange={e => setForm({...form, category: e.target.value as Category})}>
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select></div>
-            <div className="flex gap-2 items-end">
-              <button onClick={handleSave} className="flex-1 bg-green-500 text-white p-3 rounded-xl font-bold flex items-center justify-center shadow-md active-scale"><Check size={20}/></button>
-              <button onClick={() => { setEditingId(null); setShowAdd(false); }} className="flex-1 bg-gray-100 p-3 rounded-xl font-bold flex items-center justify-center active-scale"><X size={20}/></button>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Category Management Section */}
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm h-fit">
+          <div className="flex items-center gap-2 mb-6">
+            <FolderPlus size={20} className="text-blue-500" />
+            <h3 className="font-black text-gray-800">Manage Categories</h3>
+          </div>
+          <div className="flex gap-2 mb-6">
+            <input 
+              type="text" 
+              placeholder="NEW CATEGORY" 
+              className="flex-1 p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold uppercase outline-none focus:ring-2 focus:ring-blue-100"
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+            />
+            <button onClick={handleAddCategory} className="bg-blue-600 text-white p-3 rounded-xl font-bold active-scale"><Plus size={20}/></button>
+          </div>
+          <div className="space-y-2">
+            {categories.map(cat => (
+              <div key={cat} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl group">
+                <span className="text-xs font-black tracking-widest text-gray-600 uppercase">{cat}</span>
+                <button onClick={() => handleDeleteCategory(cat)} className="p-1.5 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"><Trash2 size={16}/></button>
+              </div>
+            ))}
           </div>
         </div>
-      )}
 
-      <div className="bg-white rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest"><tr className="border-b"><th className="px-4 md:px-6 py-4">Item Name</th><th className="px-4 md:px-6 py-4">Category</th><th className="px-4 md:px-6 py-4">Price</th><th className="px-4 md:px-6 py-4 text-right">Action</th></tr></thead>
-            <tbody className="divide-y divide-gray-50">
-              {products.map(p => (
-                <tr key={p.id} className="hover:bg-gray-50 transition-colors group">
-                  <td className="px-4 md:px-6 py-4 font-bold text-gray-800 text-sm">{p.name}</td>
-                  <td className="px-4 md:px-6 py-4"><span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-[9px] font-black uppercase">{p.category}</span></td>
-                  <td className="px-4 md:px-6 py-4 font-black text-sm text-orange-600">₹{p.price}</td>
-                  <td className="px-4 md:px-6 py-4 text-right flex justify-end gap-1 md:gap-2">
-                    <button onClick={() => { setEditingId(p.id); setForm(p); }} className="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Edit2 size={16}/></button>
-                    <button onClick={() => { if(confirm("Permanently delete this item?")) onUpdate(products.filter(it => it.id !== p.id)); }} className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={16}/></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Product List Section */}
+        <div className="lg:col-span-2 space-y-8">
+          {(showAddForm || editingId) && (
+            <div className="bg-white p-6 rounded-3xl shadow-2xl border border-gray-100 animate-in slide-in-from-top-4">
+              <h3 className="font-black mb-4 text-orange-600 tracking-tight">{editingId ? 'Modify Product' : 'Add New Item'}</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="flex flex-col gap-1"><label className="text-[10px] font-black text-gray-400 px-1 uppercase">Name</label><input type="text" className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-orange-200" value={productForm.name} onChange={e => setProductForm({...productForm, name: e.target.value})} /></div>
+                <div className="flex flex-col gap-1"><label className="text-[10px] font-black text-gray-400 px-1 uppercase">Price</label><input type="number" className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-orange-200" value={productForm.price} onChange={e => setProductForm({...productForm, price: Number(e.target.value)})} /></div>
+                <div className="flex flex-col gap-1"><label className="text-[10px] font-black text-gray-400 px-1 uppercase">Category</label><select className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-orange-200" value={productForm.category} onChange={e => setProductForm({...productForm, category: e.target.value})}>
+                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                </select></div>
+                <div className="flex gap-2 items-end">
+                  <button onClick={handleSaveProduct} className="flex-1 bg-green-500 text-white p-3 rounded-xl font-bold flex items-center justify-center shadow-md active-scale"><Check size={20}/></button>
+                  <button onClick={() => { setEditingId(null); setShowAddForm(false); }} className="flex-1 bg-gray-100 p-3 rounded-xl font-bold flex items-center justify-center active-scale"><X size={20}/></button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b"><tr className="border-b"><th className="px-6 py-4">Item Name</th><th className="px-6 py-4">Category</th><th className="px-6 py-4">Price</th><th className="px-6 py-4 text-right">Action</th></tr></thead>
+                <tbody className="divide-y divide-gray-50">
+                  {products.map(p => (
+                    <tr key={p.id} className="hover:bg-gray-50 transition-colors group">
+                      <td className="px-6 py-4 font-bold text-gray-800 text-sm">{p.name}</td>
+                      <td className="px-6 py-4"><span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-[9px] font-black uppercase">{p.category}</span></td>
+                      <td className="px-6 py-4 font-black text-sm text-orange-600">₹{p.price}</td>
+                      <td className="px-6 py-4 text-right flex justify-end gap-1 md:gap-2">
+                        <button onClick={() => { setEditingId(p.id); setProductForm(p); }} className="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Edit2 size={16}/></button>
+                        <button onClick={() => { if(confirm("Permanently delete this item?")) onUpdateProducts(products.filter(it => it.id !== p.id)); }} className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={16}/></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -278,7 +331,8 @@ const MenuManager: React.FC<{ products: Product[]; onUpdate: (p: Product[]) => v
 /** --- MAIN APP --- **/
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'POS' | 'REPORTS' | 'MENU'>('POS');
-  const [activeCategory, setActiveCategory] = useState<Category>('JUICES');
+  const [activeCategory, setActiveCategory] = useState<string>('');
+  const [categories, setCategories] = useState<string[]>(INITIAL_CATEGORIES);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
@@ -286,10 +340,16 @@ const App: React.FC = () => {
   const [isBasketOpen, setIsBasketOpen] = useState(false);
 
   useEffect(() => {
-    const savedSales = localStorage.getItem('bjc_sales_db_v2');
-    const savedProducts = localStorage.getItem('bjc_products_db_v2');
+    const savedSales = localStorage.getItem('bjc_sales_db_v3');
+    const savedProducts = localStorage.getItem('bjc_products_db_v3');
+    const savedCategories = localStorage.getItem('bjc_categories_db_v3');
+    
     if (savedSales) setSales(JSON.parse(savedSales));
     if (savedProducts) setProducts(JSON.parse(savedProducts));
+    
+    const cats = savedCategories ? JSON.parse(savedCategories) : INITIAL_CATEGORIES;
+    setCategories(cats);
+    setActiveCategory(cats[0]);
   }, []);
 
   const total = cart.reduce((a, b) => a + (b.price * b.quantity), 0) * 1.05;
@@ -310,7 +370,7 @@ const App: React.FC = () => {
 
     const newSale: SaleRecord = {
       id: Date.now().toString(),
-      billNo: (3000 + sales.length + 1).toString(),
+      billNo: (5000 + sales.length + 1).toString(),
       items: [...cart],
       subtotal,
       gst,
@@ -320,10 +380,16 @@ const App: React.FC = () => {
     };
     const updatedSales = [...sales, newSale];
     setSales(updatedSales);
-    localStorage.setItem('bjc_sales_db_v2', JSON.stringify(updatedSales));
+    localStorage.setItem('bjc_sales_db_v3', JSON.stringify(updatedSales));
     setCurrentSale(newSale);
     setCart([]);
     setIsBasketOpen(false);
+  };
+
+  const updateCategories = (newCats: string[]) => {
+    setCategories(newCats);
+    localStorage.setItem('bjc_categories_db_v3', JSON.stringify(newCats));
+    if (!newCats.includes(activeCategory)) setActiveCategory(newCats[0] || '');
   };
 
   const NavItem = ({ id, icon: Icon, label }: { id: any, icon: any, label: string }) => (
@@ -354,7 +420,7 @@ const App: React.FC = () => {
             {/* POS Content Grid */}
             <div className="flex-1 flex flex-col h-full overflow-hidden">
               <div className="p-3 md:p-4 bg-white border-b border-gray-100 flex gap-2 overflow-x-auto hide-scrollbar sticky top-0 z-10 shadow-sm">
-                {CATEGORIES.map(c => (
+                {categories.map(c => (
                   <button key={c} onClick={() => { setActiveCategory(c); setIsBasketOpen(false); }} className={`px-4 md:px-8 py-2 md:py-3 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black tracking-widest transition-all whitespace-nowrap active-scale ${activeCategory === c ? 'bg-orange-500 text-white shadow-lg' : 'bg-gray-100 text-gray-500'}`}>{c}</button>
                 ))}
               </div>
@@ -391,7 +457,7 @@ const App: React.FC = () => {
                       <ShoppingCart size={80}/>
                       <div className="text-center">
                         <p className="font-black text-xs uppercase tracking-[0.2em]">Basket Empty</p>
-                        <p className="text-[10px] font-bold mt-1 text-gray-400">Add some freshness to get started</p>
+                        <p className="text-[10px] font-bold mt-1 text-gray-400">Add some items to get started</p>
                       </div>
                     </div>
                   ) : cart.map(i => (
@@ -428,7 +494,7 @@ const App: React.FC = () => {
               >
                 <div className="flex items-center gap-3">
                   <div className="bg-white/20 w-8 h-8 rounded-lg flex items-center justify-center font-black">{cart.reduce((a, b) => a + b.quantity, 0)}</div>
-                  <span className="font-black text-sm uppercase tracking-widest">Complete Order</span>
+                  <span className="font-black text-sm uppercase tracking-widest">Review Order</span>
                 </div>
                 <span className="font-black text-lg tracking-tighter">₹{total.toFixed(0)}</span>
               </button>
@@ -436,9 +502,14 @@ const App: React.FC = () => {
 
           </div>
         ) : activeTab === 'REPORTS' ? (
-          <Reports sales={sales} onClear={() => { setSales([]); localStorage.removeItem('bjc_sales_db_v2'); }} onSelectSale={setCurrentSale} />
+          <Reports sales={sales} onClear={() => { setSales([]); localStorage.removeItem('bjc_sales_db_v3'); }} onSelectSale={setCurrentSale} />
         ) : (
-          <MenuManager products={products} onUpdate={(newP) => { setProducts(newP); localStorage.setItem('bjc_products_db_v2', JSON.stringify(newP)); }} />
+          <MenuManager 
+            products={products} 
+            onUpdateProducts={(newP) => { setProducts(newP); localStorage.setItem('bjc_products_db_v3', JSON.stringify(newP)); }} 
+            categories={categories}
+            onUpdateCategories={updateCategories}
+          />
         )}
       </main>
 
