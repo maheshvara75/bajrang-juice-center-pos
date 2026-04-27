@@ -1,0 +1,16 @@
+
+{
+  "short_name": "BJC POS",
+  "name": "Bajrang Juice Center POS",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3261/3261313.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#f97316",
+  "background_color": "#ffffff"
+}
